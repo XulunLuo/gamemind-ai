@@ -11,7 +11,6 @@ class BaseAgent:
         self.description = description
         self.client = Anthropic(api_key = ANTHROPIC_API_KEY)
 
-
     def build_system_prompt(self) -> str:
         raise NotImplementedError("Each agent must define its own system prompt")
     
