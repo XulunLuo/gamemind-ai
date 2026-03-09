@@ -6,6 +6,6 @@ class TestAgent(BaseAgent):
         return "You are a test agent for GameMind AI. Keep responses short."
 
 # Run the test
-agent = TestAgent(name="TestAgent", description="A simple test agent")
+agent = TestAgent(name = "TestAgent", description = "A simple test agent")
 response = agent.ask("Say hello and tell me your name!")
 print(response)
