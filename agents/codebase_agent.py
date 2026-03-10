@@ -9,9 +9,9 @@ class CodebaseAgent(BaseAgent):
 
         # Set up the agent with its name and which game it's working with
         super().__init__(
-            name="CodebaseAgent",
-            description="Analyzes and explains C# scripts in the game repository",
-            game_name=game_name
+            name = "CodebaseAgent",
+            description = "Analyzes and explains C# scripts in the game repository",
+            game_name = game_name
         )
 
     def build_system_prompt(self) -> str:
