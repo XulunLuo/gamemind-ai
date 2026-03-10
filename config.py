@@ -14,5 +14,5 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CHROMA_DB_PATH = "./chroma_db"
 
 # Game project
-GAME_NAME = "Capybara vs. Granny"
-CODEBASE_PATH = "./data/sample_code"  # dummy data 
+GAME_NAME = os.getenv("GAME_NAME", "Unknown Game")
+CODEBASE_PATH = os.getenv("CODEBASE_PATH", "./data/sample_code") 
