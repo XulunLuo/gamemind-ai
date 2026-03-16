@@ -62,16 +62,22 @@ def register(name: str, engine: str = "unity") -> GameProject:
 
     if not os.path.isdir(path):
         
-        available = [
-            f for f in os.listdir(GAMES_BASE_PATH)
-            if os.path.isdir(os.path.join(GAMES_BASE_PATH, f))
-            and not f.startswith(".")
-        ]
+        available = []
+
+        for folder_name in os.listdir(GAMES_BASE_PATH):
+            full_path = os.path.join(GAMES_BASE_PATH, folder_name)
+            if os.path.isdir(full_path) and not folder_name.startswith("."):
+                available.append(folder_name)
 
         raise ValueError(
             f"Game '{name}' not found in {GAMES_BASE_PATH}.\n"
             f"Available games: {', '.join(available)}"
         )
+
+    # Scope to "Assets/" folder only 
+    assets_path = os.path.join(path, "Assets")
+    if os.path.isdir(assets_path):
+        path = assets_path
 
     project = GameProject(name = name, path = path, engine = engine)
     project.load()

@@ -5,12 +5,11 @@ from core.orchestrator import Orchestrator
 
 app = FastAPI(title = "GameMind AI")
 
-# The orchestrator instance shared across requests
-_orchestrator: Orchestrator = None
+# One orchestrator per project 
+_orchestrators: dict = {}
 
 
 # Request / Response shapes
-
 class RegisterRequest(BaseModel):
     name: str
 
@@ -26,7 +25,7 @@ def register_project(body: RegisterRequest):
     """
     
     try:
-        project = register(name=body.name)
+        project = register(name = body.name)
         return {"registered": project.name, "domains": list(project.context_by_domain.keys())}
     except Exception as e:
         raise HTTPException(status_code = 400, detail = str(e))
@@ -45,18 +44,15 @@ def ask(body: AskRequest):
     Ask a question about a registered game project.
     """
 
-    global _orchestrator
+    global _orchestrators
 
     try:
         project = get(body.project)
     except KeyError:
         raise HTTPException(status_code = 404, detail = f"No project registered under '{body.project}'.")
 
-    # Swap project if needed, or create orchestrator on first use
-    if _orchestrator is None:
-        _orchestrator = Orchestrator(project = project)
-    elif _orchestrator.project.name != body.project:
-        _orchestrator.set_project(project)
+    if body.project not in _orchestrators:
+        _orchestrators[body.project] = Orchestrator(project=project)
 
-    answer = _orchestrator.ask(body.question)
+    answer = _orchestrators[body.project].ask(body.question)
     return {"project": body.project, "answer": answer}

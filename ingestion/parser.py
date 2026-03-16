@@ -44,11 +44,12 @@ def parse_file(filepath: str) -> list[dict] | None:
             is_binary=True
         )]
 
-    # .fbx.meta and similar — read as text, one chunk
+    # .fbx.meta and similar can be read as text, one chunk
     if is_meta and base_ext in BINARY_EXTENSIONS:
         content = _read_text(filepath)
         if content is None:
             return None
+        
         return [_make_chunk(
             content=content,
             filename=filename,
@@ -69,11 +70,11 @@ def parse_file(filepath: str) -> list[dict] | None:
     if content is None:
         return None
 
-    # C# files → chunk by method/class boundary
+    # C# files can be chunked by method/class boundary
     if ext == ".cs":
         return _chunk_csharp(content, filename, filepath, domain)
 
-    # Everything else → chunk by line count
+    # Everything else can be chunked by line count
     return _chunk_by_lines(content, filename, filepath, domain, ext)
 
 
@@ -165,6 +166,16 @@ def _chunk_by_lines(content: str, filename: str, filepath: str, domain: str, ext
     return chunks
 
 
+def _build_content_with_header(content: str, filename: str, domain: str, chunk_index: int) -> str:
+    """
+    Prepend a structured header to chunk content.
+    This helps ChromaDB match on filename, domain, and context.
+    """
+    
+    header = f"// File: {filename} | Domain: {domain} | Chunk: {chunk_index}"
+    return f"{header}\n{content}"
+
+
 def _make_chunk(content: str, filename: str, filepath: str,
                 extension: str, domain: str, chunk_index: int,
                 is_binary: bool = False, describes_asset: str = None) -> dict:
@@ -181,12 +192,11 @@ def _make_chunk(content: str, filename: str, filepath: str,
         "is_binary": is_binary
     }
 
-    # Only add this field if it's a meta file describing a binary asset
     if describes_asset:
         metadata["describes_asset"] = describes_asset
 
     return {
-        "content": content,
+        "content": _build_content_with_header(content, filename, domain, chunk_index),
         "metadata": metadata
     }
 

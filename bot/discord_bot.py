@@ -9,8 +9,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix = "!", intents = intents)
 
-# One orchestrator shared across all commands
-_orchestrator: Orchestrator = None
+# One orchestrator per project — keyed by project name
+_orchestrators: dict = {}
 
 
 @bot.event
@@ -68,7 +68,7 @@ async def ask(ctx, project: str, *, question: str):
     """
     Ask a question about a registered game project.
     """
-    global _orchestrator
+    global _orchestrators
 
     # Look up the project
     try:
@@ -79,18 +79,23 @@ async def ask(ctx, project: str, *, question: str):
 
     # Let the user know it's working
     async with ctx.typing():
-        if _orchestrator is None:
-            _orchestrator = Orchestrator(project = proj)
-        elif _orchestrator.project.name != project:
-            _orchestrator.set_project(proj)
+        if project not in _orchestrators:
+            _orchestrators[project] = Orchestrator(project=proj)
 
         try:
-            answer = _orchestrator.ask(question)
+            answer = _orchestrators[project].ask(question)
         except Exception as e:
             await ctx.send(f"Something went wrong: `{e}`")
             return
 
-    await ctx.send(f"**[{proj.name}]** {answer}")
+    full_response = f"**[{proj.name}]** {answer}"
+
+    # Send in 2000 character chunks
+    DISCORD_LIMIT = 1990  
+    
+    for i in range(0, len(full_response), DISCORD_LIMIT):
+        chunk = full_response[i:i + DISCORD_LIMIT]
+        await ctx.send(chunk)
 
 
 if __name__ == "__main__":

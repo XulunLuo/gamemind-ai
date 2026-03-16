@@ -7,21 +7,29 @@ import os
 import chromadb
 from config import CHROMA_DB_PATH
 from ingestion.parser import parse_file
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 # One ChromaDB client shared across all indexing operations
 _client = chromadb.PersistentClient(path = CHROMA_DB_PATH)
 
 def get_collection(game_name: str):
-    """
-    Get or create a ChromaDB collection for a specific game.
-    """
+    
+    # Use GPU for embedding if available
+    import torch
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[Indexer] Using device: {device}")
 
-    # ChromaDB collection names parser to all lower case
+    embedding_function = SentenceTransformerEmbeddingFunction(
+        model_name = "all-MiniLM-L6-v2",
+        device = device
+    )
+
     collection_name = game_name.lower().replace(" ", "_").replace(".", "").replace("-", "_")
 
     return _client.get_or_create_collection(
-        name=collection_name,
-        metadata={"game": game_name}
+        name = collection_name,
+        metadata = {"game": game_name},
+        embedding_function = embedding_function
     )
 
 
@@ -39,9 +47,16 @@ def index_project(game_name: str, root_path: str) -> int:
         print(f"[Indexer] '{game_name}' already has {existing} chunks")
         return existing
 
-    chunks_indexed = 0
+    SKIP_FOLDERS = {"Library", "Temp", "Logs", "obj", "Build", "Builds", ".git", ".vs"}
 
-    for dirpath, _, filenames in os.walk(root_path):
+    # Collect everything first, then add in one batch
+    all_ids = []
+    all_documents = []
+    all_metadatas = []
+
+    for dirpath, dirnames, filenames in os.walk(root_path):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_FOLDERS]
+
         for filename in sorted(filenames):
             filepath = os.path.join(dirpath, filename)
 
@@ -50,21 +65,26 @@ def index_project(game_name: str, root_path: str) -> int:
                 continue
 
             for chunk in file_chunks:
-
-                # append chunk_index to ID 
                 chunk_id = f"{os.path.relpath(filepath, root_path)}::chunk_{chunk['metadata']['chunk_index']}"
-                collection.add(
-                    ids=[chunk_id],
-                    documents=[chunk["content"]],
-                    metadatas=[chunk["metadata"]]
-                )
-                chunks_indexed += 1
+                all_ids.append(chunk_id)
+                all_documents.append(chunk["content"])
+                all_metadatas.append(chunk["metadata"])
 
-    print(f"[Indexer] Indexed '{game_name}' and {chunks_indexed} chunks stored")
-    return chunks_indexed
+    # Add in batches of 100 
+    BATCH_SIZE = 100
+    for i in range(0, len(all_ids), BATCH_SIZE):
+        collection.add(
+            ids = all_ids[i:i + BATCH_SIZE],
+            documents = all_documents[i:i + BATCH_SIZE],
+            metadatas = all_metadatas[i:i + BATCH_SIZE]
+        )
+        print(f"[Indexer] Embedded {min(i + BATCH_SIZE, len(all_ids))}/{len(all_ids)} chunks...")
+
+    print(f"[Indexer] Indexed '{game_name}' — {len(all_ids)} chunks stored")
+    return len(all_ids)
 
 
-def query_collection(game_name: str, question: str, domain: str = None, n_results: int = 5) -> str:
+def query_collection(game_name: str, question: str, domain: str = None, n_results: int = 10) -> str:
     """
     Semantic search to find the most relevant chunks for a question.
     Returns a combined string of the top results ready to pass to an agent.
@@ -75,11 +95,18 @@ def query_collection(game_name: str, question: str, domain: str = None, n_result
     if collection.count() == 0:
         raise RuntimeError(f"[Indexer] No chunks found for '{game_name}'. Run index_project() first.")
 
-    # Character questions filter to codebase since character files are .cs
     where_filter = None
-    if domain:
-        context_domain = "codebase" if domain == "character" else domain
-        where_filter = {"domain": context_domain}
+    if domain == "character":
+
+        # Character files are .cs 
+        where_filter = {
+            "$and": [
+                {"domain": {"$eq": "codebase"}},
+                {"extension": {"$eq": ".cs"}}
+            ]
+        }
+    elif domain:
+        where_filter = {"domain": {"$eq": domain}}
 
     results = collection.query(
         query_texts = [question],
@@ -97,4 +124,3 @@ def query_collection(game_name: str, question: str, domain: str = None, n_result
         context += f"\n\n// === {filename} ===\n{doc}"
 
     return context
-

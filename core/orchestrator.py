@@ -27,20 +27,6 @@ class Orchestrator:
             "world": WorldAgent(game_name = project.name)
         }
 
-    def set_project(self, project: GameProject):
-        """Switch to a different game project at runtime."""
-
-        self.project = project
-
-        # Re-initialize agents with the new project's name
-        self.agents = {
-            "asset": AssetAgent(game_name = project.name),
-            "character": CharacterAgent(game_name = project.name),
-            "codebase": CodebaseAgent(game_name = project.name),
-            "world": WorldAgent(game_name = project.name)
-        }
-        print(f"[Orchestrator] Switched to project: '{project.name}'")
-
     def classify(self, question: str) -> str:
         """Ask Claude which domain this question belongs to."""
 
