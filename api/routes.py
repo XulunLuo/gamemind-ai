@@ -12,8 +12,7 @@ _orchestrator: Orchestrator = None
 # Request / Response shapes
 
 class RegisterRequest(BaseModel):
-    name: str   
-    path: str   
+    name: str
 
 class AskRequest(BaseModel):
     project: str    # which registered project to query
@@ -27,7 +26,7 @@ def register_project(body: RegisterRequest):
     """
     
     try:
-        project = register(name = body.name, path = body.path)
+        project = register(name=body.name)
         return {"registered": project.name, "domains": list(project.context_by_domain.keys())}
     except Exception as e:
         raise HTTPException(status_code = 400, detail = str(e))

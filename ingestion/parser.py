@@ -5,7 +5,7 @@ Splits large files into smaller semantic chunks for more precise retrieval.
 
 import os
 import re
-from ingestion.unity_loader import get_domain_for_extension
+from projects.unity_loader import get_domain_for_extension
 
 # Binary file types we can't read as text
 BINARY_EXTENSIONS = {".fbx", ".png", ".jpg", ".jpeg", ".wav", ".mp3",

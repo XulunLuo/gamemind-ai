@@ -91,3 +91,16 @@ def list_projects() -> list:
     """Return the names of all registered projects."""
 
     return list(_registry.keys())
+
+
+def list_available_games() -> list:
+    """Return all game folder names found in GAMES_BASE_PATH."""
+
+    if not os.path.isdir(GAMES_BASE_PATH):
+        raise RuntimeError(f"Games folder not found: {GAMES_BASE_PATH}")
+
+    result = []
+    for f in os.listdir(GAMES_BASE_PATH):
+        if os.path.isdir(os.path.join(GAMES_BASE_PATH, f)) and not f.startswith("."):
+            result.append(f)
+    return result

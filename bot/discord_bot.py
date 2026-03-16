@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from config import DISCORD_BOT_TOKEN
-from projects.game_project import register, get, list_projects
+from projects.game_project import register, get, list_projects, list_available_games
 from core.orchestrator import Orchestrator
 
 # Bot setup 
@@ -18,18 +18,34 @@ async def on_ready():
     print(f"[GameMind Bot] Logged in as {bot.user}")
 
 
+@bot.command(name = "games")
+async def list_available(ctx):
+    """List all games available to register."""
+
+    try:
+        available = list_available_games()
+    except Exception as e:
+        await ctx.send(f"Could not read games folder: `{e}`")
+        return
+
+    if not available:
+        await ctx.send("No games found in the games folder.")
+    else:
+        await ctx.send(f"Available games to register: `{', '.join(available)}`")
+
+
 @bot.command(name = "register")
-async def register_project(ctx, name: str, path: str):
+async def register_project(ctx, name: str):
     """
     Register a game project and load its files.
-    Example Usage: !register "Capybara vs Granny" /path/to/project
+    Example Usage: !register Capybaras-vs.-Granny
     """
     await ctx.send(f"Loading project **{name}**...")
 
     try:
-        project = register(name = name, path = path)
+        project = register(name = name)
         domains = list(project.context_by_domain.keys())
-        await ctx.send(f"Registered **{project.name}** — domains loaded: `{', '.join(domains)}`")
+        await ctx.send(f"Registered **{project.name}** and domains loaded: `{', '.join(domains)}`")
     except Exception as e:
         await ctx.send(f"Failed to register project: `{e}`")
 
@@ -42,12 +58,12 @@ async def list_all_projects(ctx):
     names = list_projects()
 
     if not names:
-        await ctx.send("No projects registered yet. Use `!register <name> <path>` to add one.")
+        await ctx.send("No projects registered yet. Use `!register <name>` to add one.")
     else:
         await ctx.send(f"Registered projects: `{', '.join(names)}`")
 
 
-@bot.command(name="ask")
+@bot.command(name = "ask")
 async def ask(ctx, project: str, *, question: str):
     """
     Ask a question about a registered game project.
