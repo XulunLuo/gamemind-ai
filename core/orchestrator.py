@@ -1,40 +1,53 @@
 from anthropic import Anthropic
-from config import ANTHROPIC_API_KEY, MODEL, GAME_NAME
+from config import ANTHROPIC_API_KEY, MODEL
 from agents.asset_agent import AssetAgent
 from agents.character_agent import CharacterAgent
 from agents.codebase_agent import CodebaseAgent
 from agents.world_agent import WorldAgent
+from projects.game_project import GameProject
 
 class Orchestrator:
     """
     Routes user questions to the right specialized agent.
+    Accepts a GameProject so context is isolated per game and fetched by domain.
     """
 
-    def __init__(self, game_name: str = GAME_NAME, context: str = ""):
+    def __init__(self, project: GameProject):
 
-        # One Claude agent for a routing decisions
+        # One Claude client for routing decisions
         self.client = Anthropic(api_key = ANTHROPIC_API_KEY)
-        self.game_name = game_name
+        self.project = project
 
-        # The shared loaded game files passed to every agent
-        self.context = context
-
-        # Initialize for the four agents
+        # Initialize the four agents with this project's name
         self.agents = {
-            "asset": AssetAgent(game_name = game_name),
-            "character": CharacterAgent(game_name = game_name),
-            "codebase": CodebaseAgent(game_name = game_name),
-            "world": WorldAgent(game_name = game_name)
+            "asset": AssetAgent(game_name = project.name),
+            "character": CharacterAgent(game_name = project.name),
+            "codebase": CodebaseAgent(game_name = project.name),
+            "world": WorldAgent(game_name = project.name)
         }
+
+    def set_project(self, project: GameProject):
+        """Switch to a different game project at runtime."""
+
+        self.project = project
+
+        # Re-initialize agents with the new project's name
+        self.agents = {
+            "asset": AssetAgent(game_name = project.name),
+            "character": CharacterAgent(game_name = project.name),
+            "codebase": CodebaseAgent(game_name = project.name),
+            "world": WorldAgent(game_name = project.name)
+        }
+        print(f"[Orchestrator] Switched to project: '{project.name}'")
 
     def classify(self, question: str) -> str:
         """Ask Claude which domain this question belongs to."""
 
-        response = self.client.messages.create (
+        response = self.client.messages.create(
             model = MODEL,
             max_tokens = 20,
-            system = 
-            """You are a router for a game AI system. 
+            system =
+            """You are a router for a game AI system.
             Classify the user's question into exactly one of these domains:
             1. codebase  (scripts, code logic, game mechanics, functions)
             2. character (characters, enemies, behaviors, stats, AI logic)
@@ -43,24 +56,31 @@ class Orchestrator:
 
             Reply with only one word: codebase, character, world, or asset.""",
             messages = [{"role": "user", "content": question}]
-        ) 
-        
+        )
+
         domain = response.content[0].text.strip().lower()
 
-        # Fallback handler to the codebase if Claude reply something unexpected
+        # Strip punctuation in case Claude returns "asset." or "world\n"
+        domain = domain.strip(".,\n ")
+
+        # Fallback to codebase if Claude returns something unexpected
         if domain not in self.agents:
-            raise ValueError(f"[Orchestrator] Unknown domain '{domain}' returned by classifier")
+            print(f"[Orchestrator] Unexpected domain '{domain}', falling back to codebase")
+            domain = "codebase"
 
         return domain
-    
+
     def ask(self, question: str) -> str:
-        """Classify the question, route it to the right agent, and return the answer."""
+        """Classify the question, fetch domain specific context, route to the right agent."""
 
         domain = self.classify(question)
         print(f"[Orchestrator] Routing to: {domain}")
 
+        # Pull only the relevant domain's files — not the entire project
+        context = self.project.get_context(domain)
+
         agent = self.agents[domain]
-        return agent.ask(question = question, context = self.context)
+        return agent.ask(question = question, context = context)
 
 
 
