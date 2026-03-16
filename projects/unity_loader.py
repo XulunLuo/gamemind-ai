@@ -6,10 +6,11 @@ import os
 
 # File types Unity projects use, grouped by which agent cares about them
 UNITY_FILE_TYPES = {
-    "codebase": [".cs"],
-    "world": [".unity"],
-    "assets": [".prefab", ".asset", ".mat", ".anim"],
-    "meta": [".meta"]
+    "codebase": [".cs", ".cginc", ".hlsl", ".shader", ".shadergraph", ".vfx"],
+    "asset":    [".prefab", ".asset", ".mat", ".anim", ".controller", 
+                ".physicMaterial", ".renderTexture", ".inputactions", ".lighting"],
+    "world":    [".unity", ".json", ".txt"],
+    "meta":     [".meta"]
 }
 
 # All supported extensions in one flat list for quick lookup

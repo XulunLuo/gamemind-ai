@@ -5,6 +5,7 @@ from agents.character_agent import CharacterAgent
 from agents.codebase_agent import CodebaseAgent
 from agents.world_agent import WorldAgent
 from projects.game_project import GameProject
+from ingestion.indexer import query_collection
 
 class Orchestrator:
     """
@@ -76,11 +77,14 @@ class Orchestrator:
         domain = self.classify(question)
         print(f"[Orchestrator] Routing to: {domain}")
 
-        # Pull only the relevant domain's files — not the entire project
-        context = self.project.get_context(domain)
+        context = query_collection(
+            game_name=self.project.name,
+            question=question,
+            domain=domain
+        )
 
         agent = self.agents[domain]
-        return agent.ask(question = question, context = context)
+        return agent.ask(question=question, context=context)
 
 
 

@@ -1,4 +1,7 @@
+import os
+from config import GAMES_BASE_PATH
 from projects.unity_loader import load_files_by_domain, load_all_as_string
+from ingestion.indexer import index_project
 
 # Maps project name to GameProject 
 _registry: dict = {}
@@ -24,14 +27,16 @@ class GameProject:
 
         if self.engine == "unity":
             self.context_by_domain = load_files_by_domain(self.path)
+            index_project(self.name, self.path)
         else:
             raise ValueError(f"Unsupported engine: '{self.engine}'. Only 'unity' is supported.")
         
         # Check if there are acutally files in certain domain
         domains_with_content = []
-        for content in self.context_by_domain.values():
+        
+        for domain, content in self.context_by_domain.items():
             if content.strip():
-                domains_with_content.append(content)
+                domains_with_content.append(domain)
         
         total_domains = len(domains_with_content)
         print(f"Loaded '{self.name}' with {total_domains} domain(s) of content")
@@ -50,8 +55,23 @@ class GameProject:
         return "\n\n".join(self.context_by_domain.values())
     
 # Registry functions 
-def register(name: str, path: str, engine: str = "unity") -> GameProject:
+def register(name: str, engine: str = "unity") -> GameProject:
     """Create a GameProject, load its files, and add it to the registry."""
+
+    path = os.path.join(GAMES_BASE_PATH, name)
+
+    if not os.path.isdir(path):
+        
+        available = [
+            f for f in os.listdir(GAMES_BASE_PATH)
+            if os.path.isdir(os.path.join(GAMES_BASE_PATH, f))
+            and not f.startswith(".")
+        ]
+
+        raise ValueError(
+            f"Game '{name}' not found in {GAMES_BASE_PATH}.\n"
+            f"Available games: {', '.join(available)}"
+        )
 
     project = GameProject(name = name, path = path, engine = engine)
     project.load()

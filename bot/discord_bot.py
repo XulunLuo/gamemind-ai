@@ -18,7 +18,7 @@ async def on_ready():
     print(f"[GameMind Bot] Logged in as {bot.user}")
 
 
-@bot.command(name="register")
+@bot.command(name = "register")
 async def register_project(ctx, name: str, path: str):
     """
     Register a game project and load its files.
@@ -61,10 +61,10 @@ async def ask(ctx, project: str, *, question: str):
         await ctx.send(f"No project registered under `{project}`. Use `!projects` to see what's loaded.")
         return
 
-    # Let the user know it's working — Claude can take a moment
+    # Let the user know it's working
     async with ctx.typing():
         if _orchestrator is None:
-            _orchestrator = Orchestrator(project=proj)
+            _orchestrator = Orchestrator(project = proj)
         elif _orchestrator.project.name != project:
             _orchestrator.set_project(proj)
 

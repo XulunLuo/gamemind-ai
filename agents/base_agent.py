@@ -1,10 +1,10 @@
 from anthropic import Anthropic
-from config import ANTHROPIC_API_KEY, MODEL, GAME_NAME
+from config import ANTHROPIC_API_KEY, MODEL
 
 class BaseAgent:
 
-    # Set the agent's name, description, and creates one Claude client for it 
-    def __init__(self, name: str, description: str, game_name: str = GAME_NAME):
+    # Set the agent's name, description, and creates one Claude client for it
+    def __init__(self, name: str, description: str, game_name: str = "Unknown Game"):
         self.name = name
         self.description = description
         self.game_name = game_name

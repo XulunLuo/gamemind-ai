@@ -13,6 +13,5 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 # ChromaDB
 CHROMA_DB_PATH = "./chroma_db"
 
-# Game project
-GAME_NAME = os.getenv("GAME_NAME", "Unknown Game")
-CODEBASE_PATH = os.getenv("CODEBASE_PATH", "./data/sample_code") 
+# Game projects 
+GAMES_BASE_PATH = os.getenv("GAMES_BASE_PATH", "./gameprojects")
