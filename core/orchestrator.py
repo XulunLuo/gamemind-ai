@@ -19,7 +19,6 @@ class Orchestrator:
         self.client = Anthropic(api_key = ANTHROPIC_API_KEY)
         self.project = project
 
-        # Initialize the four agents with this project's name
         self.agents = {
             "asset": AssetAgent(game_name = project.name),
             "character": CharacterAgent(game_name = project.name),
@@ -36,22 +35,30 @@ class Orchestrator:
             system =
             """You are a router for a game AI system.
             Classify the user's question into exactly one of these domains:
-            1. codebase  (scripts, code logic, game mechanics, functions)
-            2. character (characters, enemies, behaviors, stats, AI logic)
-            3. world     (level structure, scene names, spawn points, level progression, win/lose conditions, environment layout)
-            4. asset     (art assets, prefabs, materials, animations, textures)
+            1. codebase  — scripts, code logic, functions, game mechanics implementation
+            2. character — specific characters, enemies, behaviors, stats, AI logic
+            3. world     — scene names, level layout, spawn points, environment, fog settings
+            4. asset     — art assets, prefabs, materials, animations, textures
+            5. overview  — game type, player count, general description, how to play, game summary
 
-            Reply with only one word: codebase, character, world, or asset.""",
-            messages = [{"role": "user", "content": question}]
-        )
+            Examples:
+            Q: "How does the dash ability work?"         → codebase
+            Q: "What is Granny's attack range?"          → character
+            Q: "What scenes does this game have?"        → world
+            Q: "What 3D models are in this game?"        → asset
+            Q: "Is this a multiplayer game?"             → overview
+            Q: "Give me an introduction to this game"    → overview
+            Q: "How many players can play?"              → overview
+            Q: "What kind of game is this?"              → overview
+            Q: "How is the game played?"                 → overview
 
-        domain = response.content[0].text.strip().lower()
+            Reply with only one word: codebase, character, world, asset, or overview.""",
+                        messages = [{"role": "user", "content": question}]
+                    )
 
-        # Strip punctuation in case Claude returns "asset." or "world\n"
-        domain = domain.strip(".,\n ")
+        domain = response.content[0].text.strip().lower().strip(".,\n ")
 
-        # Fallback to codebase if Claude returns something unexpected
-        if domain not in self.agents:
+        if domain not in self.agents and domain != "overview":
             print(f"[Orchestrator] Unexpected domain '{domain}', falling back to codebase")
             domain = "codebase"
 
@@ -63,14 +70,22 @@ class Orchestrator:
         domain = self.classify(question)
         print(f"[Orchestrator] Routing to: {domain}")
 
+        # Overview questions search across all domains
+        if domain == "overview":
+            context = query_collection(
+                game_name = self.project.name,
+                question = question,
+                domain = None
+            )
+            return self.agents["codebase"].ask(question=question, context=context)
+
         context = query_collection(
-            game_name=self.project.name,
-            question=question,
-            domain=domain
+            game_name = self.project.name,
+            question = question,
+            domain = domain
         )
 
-        agent = self.agents[domain]
-        return agent.ask(question=question, context=context)
+        return self.agents[domain].ask(question=question, context=context)
 
 
 
