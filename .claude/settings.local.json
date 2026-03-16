@@ -3,7 +3,10 @@
     "allow": [
       "Bash(python3 -c \"from api.routes import RegisterRequest; print\\(RegisterRequest.schema\\(\\)\\)\")",
       "Bash(grep -l \"import unittest\\\\|import pytest\\\\|from unittest\\\\|from pytest\" /c/Users/xulunl/Desktop/gamemind-ai/tests/*.py)",
-      "Bash(python3 -c \"from ingestion.parser import parse_file\")"
+      "Bash(python3 -c \"from ingestion.parser import parse_file\")",
+      "Bash(find /c/Users/xulunl/Desktop/gamemind-ai -name \"*.py\" -type f -exec wc -l {})",
+      "Read(//c/Users/xulunl/Desktop/gamemind-ai/**)",
+      "Bash(sort -k2 -n)"
     ]
   }
 }

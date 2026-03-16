@@ -21,7 +21,7 @@ def load_files_by_domain(root_path: str) -> dict:
     Walk a Unity project folder and return files grouped by agent domain.
     """
 
-    # Empty string bucket for domian
+    # Empty string bucket for domain
     grouped = {domain: "" for domain in UNITY_FILE_TYPES if domain != "meta"}
 
     for dirpath, _, filenames in os.walk(root_path):

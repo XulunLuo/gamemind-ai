@@ -1,6 +1,6 @@
 import os
 from config import GAMES_BASE_PATH
-from projects.unity_loader import load_files_by_domain, load_all_as_string
+from projects.unity_loader import load_files_by_domain
 from ingestion.indexer import index_project
 
 # Maps project name to GameProject 
@@ -31,7 +31,7 @@ class GameProject:
         else:
             raise ValueError(f"Unsupported engine: '{self.engine}'. Only 'unity' is supported.")
         
-        # Check if there are acutally files in certain domain
+        # Check if there are actually files in certain domain
         domains_with_content = []
         
         for domain, content in self.context_by_domain.items():

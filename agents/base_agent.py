@@ -5,8 +5,6 @@ class BaseAgent:
 
     # Set the agent's name, description, and creates one Claude client for it
     def __init__(self, name: str, description: str, game_name: str = "Unknown Game"):
-        self.name = name
-        self.description = description
         self.game_name = game_name
         self.client = Anthropic(api_key = ANTHROPIC_API_KEY)
 
